@@ -43,10 +43,10 @@ def flatten_value(value: Any, prefix: str = "") -> list[str]:
     return values
 
 
-def fetch_page(page: int, page_size: int) -> dict[str, Any]:
+def fetch_page(page: int, page_size: int, **params) -> dict[str, Any]:
     response = requests.get(
         BASE_URL,
-        params={"page": page, "page_size": page_size, "details": True},
+        params={"page": page, "page_size": page_size, "details": True, **params},
         headers=DEFAULT_HEADERS,
         timeout=30,
     )
@@ -69,29 +69,39 @@ def build_product_record(product: dict[str, Any]) -> dict[str, Any]:
     product_record["downloaded_at"] = datetime.now(timezone.utc).isoformat()
     return product_record
 
+def get_product_categories(file_path: str) -> dict[str,str]:
+    with open(file_path, 'r') as file:
+        product_categories = json.load(file)
+    return product_categories
 
 def iter_products(max_items: int = 200, page_size: int = 24) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     collected: list[dict[str, Any]] = []
     page = 1
     metadata: dict[str, Any] = {}
 
-    while len(collected) < max_items:
-        payload = fetch_page(page, page_size)
-        data = payload.get("data", {})
-        products = data.get("products") or []
-        metadata = data.get("page", {})
+    category_IDs = get_product_categories("data\\category_id.json")
 
-        if not products:
-            break
+    allowed_categories = ["Colazione, dolci e snack salati (Breakfast, sweets & savory snacks)"]
 
-        for product in products:
-            if len(collected) >= max_items:
-                break
-            collected.append(build_product_record(product))
+    for category_id, category_desc in category_IDs.items():
+        if category_desc in allowed_categories:
+            while len(collected) < max_items:
+                payload = fetch_page(page, page_size)
+                data = payload.get("data", {})
+                products = data.get("products") or []
+                metadata = data.get("page", {})
 
-        if metadata.get("totPages") and page >= int(metadata.get("totPages")):
-            break
-        page += 1
+                if not products:
+                    break
+
+                for product in products:
+                    if len(collected) >= max_items:
+                        break
+                    collected.append(build_product_record(product))
+
+                if metadata.get("totPages") and page >= int(metadata.get("totPages")):
+                    break
+                page += 1
 
     return collected, metadata
 
