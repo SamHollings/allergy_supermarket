@@ -44,6 +44,7 @@ def flatten_value(value: Any, prefix: str = "") -> list[str]:
 
 
 def fetch_page(page: int, page_size: int, **params) -> dict[str, Any]:
+    print({"page": page, "page_size": page_size, "details": True, **params})
     response = requests.get(
         BASE_URL,
         params={"page": page, "page_size": page_size, "details": True, **params},
@@ -85,12 +86,13 @@ def iter_products(max_items: int = 200, page_size: int = 24) -> tuple[list[dict[
 
     for category_id, category_desc in category_IDs.items():
         if category_desc in allowed_categories:
+            print(f"Fetching products for category: {category_desc} (ID: {category_id})")
             while len(collected) < max_items:
-                payload = fetch_page(page, page_size)
+                payload = fetch_page(page, page_size, **dict(category_id=int(category_id)))
                 data = payload.get("data", {})
                 products = data.get("products") or []
                 metadata = data.get("page", {})
-
+                print( metadata)
                 if not products:
                     break
 
@@ -116,6 +118,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--max-items", type=int, default=200, help="Maximum number of products to fetch")
     parser.add_argument("--page-size", type=int, default=24, help="Products per page")
+    parser.add_argument("--category-id", type=int, default=33999, help="CategoryID to load products from")
     parser.add_argument("--output", type=Path, default=Path(__file__).resolve().parents[1] / "data" / "products.json", help="Path for the canonical product export")
     args = parser.parse_args()
 
