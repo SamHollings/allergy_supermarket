@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import requests
+import pandas as pd
 
 BASE_URL = "https://www.coopshop.it/ebsn/api/products"
 DEFAULT_HEADERS = {
@@ -114,16 +115,29 @@ def save_products(products: list[dict[str, Any]], output_path: Path) -> None:
         json.dump({"products": products}, fh, ensure_ascii=False, indent=2)
 
 
+def save_products_to_database(products: list[dict[str, Any]]) -> None:
+    # need to take the product record and process the json into noramlized tables for the database. This will require creating a database connection and inserting the data into the appropriate tables.
+    # intially it will use a local sqlite database, but later it will be changed to a remote database. The database schema will be created in a separate script, and the database connection will be handled in a separate module.
+    
+    # perhaps read the json into pandas using the JSON commands to split useful data from the json into columns
+
+    pd.read_json("data//products.json").iloc[0]['products']
+    pass
+
+
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--max-items", type=int, default=200, help="Maximum number of products to fetch")
-    parser.add_argument("--page-size", type=int, default=24, help="Products per page")
+    parser.add_argument("--max-items", type=int, default=10000, help="Maximum number of products to fetch")
+    parser.add_argument("--page-size", type=int, default=100, help="Products per page")
     parser.add_argument("--category-id", type=int, default=33999, help="CategoryID to load products from")
     parser.add_argument("--output", type=Path, default=Path(__file__).resolve().parents[1] / "data" / "products.json", help="Path for the canonical product export")
     args = parser.parse_args()
 
     products, metadata = iter_products(max_items=args.max_items, page_size=args.page_size)
     save_products(products, args.output)
+    save_products_to_database(products)
 
     print(f"Saved {len(products)} product records to {args.output}")
     print(f"Metadata: {metadata}")
