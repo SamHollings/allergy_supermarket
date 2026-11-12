@@ -43,3 +43,42 @@ nut_mask['allergen_text'] = allergen_text_nut_mask
 nut_mask
 
 
+# %%
+def get_allergens_from_text(text: str) -> list:
+    """
+    Extracts allergens from a given text string.
+
+    Args:
+        text (str): The input text containing allergen information.
+
+    Returns:
+        list: A list of allergens found in the text.   
+
+    """
+
+    allergens = []
+    if pd.isna(text):
+        return allergens
+
+    # Define a list of known allergens
+    known_allergens = [
+        'Frutta a guscio', 'Arachidi', 'Latte', 'Uova', 'Pesce', 'Crostacei', 
+        'Molluschi', 'Soia', 'Glutine', 'Sesamo', 'Senape', 'Sedano'
+    ]
+
+    # Check for each known allergen in the text
+    for allergen in known_allergens:
+        if allergen.lower() in text.lower():
+            allergens.append(allergen)
+
+    return allergens
+
+# %%
+df_allergens = products_normalized[['id']].assign(allergens=products_normalized['allergen_text'].apply(get_allergens_from_text))
+df_allergens['allergens_list'] = df_allergens['allergens']
+df_allergens_long = df_allergens.explode('allergens')
+pd.merge(products_normalized, df_allergens_long, on='id', how='left').to_csv("..//data//products_frontend.csv", index=False)
+
+
+#ToDo - add 'None' to the list of allergens for products that have no allergens listed, so that they can be filtered in the front end
+# %%
