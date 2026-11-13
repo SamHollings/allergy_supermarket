@@ -56,7 +56,7 @@ def get_allergens_from_text(text: str) -> list:
 
     """
 
-    allergens = []
+    allergens = []  # Default to 'None' if no allergens are found
     if pd.isna(text):
         return allergens
 
@@ -71,12 +71,17 @@ def get_allergens_from_text(text: str) -> list:
         if allergen.lower() in text.lower():
             allergens.append(allergen)
 
+    if allergens == []:
+        allergens.append('None')  # Add 'None' if no allergens are found
+
     return allergens
 
 # %%
 df_allergens = products_normalized[['id']].assign(allergens=products_normalized['allergen_text'].apply(get_allergens_from_text))
 df_allergens['allergens_list'] = df_allergens['allergens']
 df_allergens_long = df_allergens.explode('allergens')
+
+# %%
 pd.merge(products_normalized, df_allergens_long, on='id', how='left').to_csv("..//data//products_frontend.csv", index=False)
 
 
